@@ -52,13 +52,13 @@ class MLB_data_gather(object):
                 elif line_id == 'start':
                     roster_start_dict.append({'player_id':line_list[1],
                                               'player_name':line_list[2].strip('"'),
-                                              'team_HA':line_list[3],
-                                              'batting_order':line_list[4],
-                                              'position':line_list[5]})
+                                              'team_HA':int(line_list[3]),
+                                              'batting_order':int(line_list[4]),
+                                              'position':int(line_list[5])})
                 elif line_id == 'play':
                     play_dict.append({'eventcount':eventcount,
-                                      'inning':line_list[1],
-                                      'half':line_list[2],
+                                      'inning':int(line_list[1]),
+                                      'half':int(line_list[2]),
                                       'player_id':line_list[3],
                                       'count':line_list[4],
                                       'pitches':line_list[5],
@@ -73,14 +73,14 @@ class MLB_data_gather(object):
                     sub_dict.append({'eventcount':eventcount,
                                      'player_id':line_list[1],
                                      'player_name':line_list[2].strip('"'),
-                                     'team_HA':line_list[3],
-                                     'batting_order':line_list[4],
-                                     'position':line_list[5]})
+                                     'team_HA':int(line_list[3]),
+                                     'batting_order':int(line_list[4]),
+                                     'position':int(line_list[5])})
                     eventcount += 1
                 elif line_id == 'data':
                     data_dict.append({'field':line_list[1],
                                       'player_id':line_list[2],
-                                      'er':line_list[3]})
+                                      'er':int(line_list[3])})
                 else:
                     pass
         game_dict = {'info':info_dict,
@@ -153,7 +153,10 @@ class MLB_data_gather(object):
                 elif '.DS_S' in eventfile:
                     pass
                 else:
-                    print('UNUSED FILE: {}'.format(eventfile))
+                    if str(year) in eventfile:
+                        print('UNUSED FILE: {}'.format(eventfile))
+                    else:
+                        pass
         print('{} Complete'.format(year))
 
     def main(self, years):
