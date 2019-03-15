@@ -14,7 +14,7 @@ import config
 # Daily lineup fetch
 gl = daily_lineups()
 pull_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-lineups = pd.DataFrame.from_dict(gl.main())
+lineups = pd.DataFrame.from_dict(gl.main()).drop_duplicates()
 
 # Add dates to dataframe
 lineups['game_date'] = today_date
