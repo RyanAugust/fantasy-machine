@@ -1,0 +1,6 @@
+requests
+pandas
+sqlite3
+lxml
+bs4
+datetime
