@@ -1,0 +1,1 @@
+select * from daily_lineups where pull_time==(select max(pull_time) from daily_lineups);
