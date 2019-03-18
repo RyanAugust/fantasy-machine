@@ -1,8 +1,3 @@
-# import requests
-# from bs4 import BeautifulSoup
-# from lxml import html
-# from lxml import etree
-
 import pandas as pd
 import sqlite3
 import datetime
