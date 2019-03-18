@@ -6,3 +6,4 @@ data/
 # Files
 *.db
 *.pyc
+notebooks/
