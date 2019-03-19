@@ -7,7 +7,11 @@ class metric_calculator(object):
             'wOBA':self.mts.wOBA,
             'wRAA':self.mts.wRAA,
             'UZR':self.mts.UZR,
-            'fWAR':self.mts.fWAR}
+            'fWAR':self.mts.fWAR,
+            ### Pitching
+            'IP':self.mts.inning_pitched,
+            'WHIP':self.mts.WHIP,
+            'FIP':self.mts.FIP}
             
     def calculate(self, player_ids, metric):
         self.metric_exists(metric)
@@ -29,7 +33,8 @@ class stat_metrics(object):
                         'w1B':.880,
                         'w2B':1.247,
                         'w3B':1.578,
-                        'wHR':2.031}
+                        'wHR':2.031,
+                        'cFIP':3.161}
         self.position_adj = {1:0,
             2:+12.5,
             3:-12.5,
@@ -153,4 +158,34 @@ class stat_metrics(object):
         pa = len(df)
         value = wRAA + 0 + position + (20/600)*pa ######################################################### Working
         return value
-        
+    #####################################
+    ############ PITCHING  ##############
+    #####################################
+    def inning_pitched(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='pitcher')
+        ip = float(df['outsonplay'].sum())/3.0
+        return ip
+
+    def WHIP(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='pitcher')
+        ip = self.inning_pitched(player_ids)
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        b1 = df_.loc[20]
+        b2 = df_.loc[21]
+        b3 = df_.loc[22]
+        hr = df_.loc[23]
+        ibb = df_.loc[15]
+        bb = df_.loc[14]
+        value = ((bb + ibb) + (b1 + b2 + b3 + hr))/ip
+        return value
+
+    def FIP(self, player_ids):
+        ip = self.inning_pitched(player_ids)
+        df = self.player_df(player_ids=player_ids, stat_type='pitcher')
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        hr = df_.loc[23]
+        bb = df_.loc[14]
+        hbp = df_.loc[16]
+        k = df_.loc[3]
+        value =  (13*hr + 3*(hbp+bb) - 2*k)/ip + self.fg_constants['cFIP']
+        return value
