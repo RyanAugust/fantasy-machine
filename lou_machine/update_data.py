@@ -65,5 +65,7 @@ class update_data(object):
 		existing_gids = pd.read_sql_query(query ,con)
 		pd.read_
 
+ud = update_data()
+ud.update_lineups()
 
 
