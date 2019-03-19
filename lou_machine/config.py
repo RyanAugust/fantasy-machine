@@ -1,6 +1,7 @@
 import os
 user = os.environ['USER']
-lou_machine_dir = '/'.join(os.getcwd().split('/')[:-1])
+# lou_machine_dir = '/'.join(os.getcwd().split('/')[:-1])
+lou_machine_dir = os.getcwd()
 
 # PATHS
 ## Temp dirs
