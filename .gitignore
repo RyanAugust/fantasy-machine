@@ -2,8 +2,9 @@
 __pycache__/
 .ipynb_checkpoints
 data/
+notebooks/
 
 # Files
 *.db
 *.pyc
-notebooks/
+.DS_Store
