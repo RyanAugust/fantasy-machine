@@ -7,6 +7,8 @@ import io
 import subprocess
 
 from lou_machine import config
+from data_ops import lineup_scraping
+from data_ops import playerid_mapping
 
 class update_data(object):
 	def __init__(self):
@@ -64,8 +66,5 @@ class update_data(object):
 																				current_year),
 		existing_gids = pd.read_sql_query(query ,con)
 		pd.read_
-
-ud = update_data()
-ud.update_lineups()
 
 
