@@ -3,12 +3,12 @@ import sqlite3
 import datetime
 import requests
 import zipfile
-import io
+from io import StringIO
 import subprocess
 
 from lou_machine import config
-from data_ops import lineup_scraping
-from data_ops import playerid_mapping
+from .data_ops import lineup_scraping
+from .data_ops import playerid_mapping
 
 class update_data(object):
 	def __init__(self):
@@ -60,11 +60,29 @@ class update_data(object):
 		z.extractall(config.temp_data_dir)
 		return 0
 
-	def check_missing_games(self, current_year, ):
+	def check_missing_games(self, current_year):
 		con = sqlite3.connect(config.mlb_db_path)
 		query = """SELECT DISTINCT gameid FROM {} WHERE gameid like '%{}%'""".format(config.mlb_event_table,
 																				current_year),
 		existing_gids = pd.read_sql_query(query ,con)
 		pd.read_
+		
+	def update_mapping(self):
+		# Fetch remote player id mapping
+		name_map_url = "http://crunchtimebaseball.com/master.csv"
+		name_map_content = requests.get(name_map_url).content.decode('utf-8','ignore')
+		name_map = pd.read_csv(StringIO(name_map_content))
 
+		# Connect and compare updated id map with existing local map
+		con = sqlite3.connect(config.player_mapping_db)
+		try:
+			existing_players = pd.read_sql('select * from {}'.format(config.player_map_table), con=con)
+			final_map = existing_players.append(name_map).drop_duplicates()
+		except:
+			final_map = name_map
 
+		# Push final mapping back to local db
+		final_map.to_sql(con=con, name=config.player_map_table, if_exists='replace', index=False)
+		# confirm and close
+		con.close()
+		print("Player ID's updated")
