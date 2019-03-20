@@ -38,20 +38,24 @@ class daily_lineups(object):
         return team
     def get_pitcher(self, pitcher_scrape):
         pitcher = pitcher_scrape[0].text
-        return pitcher
+        pitcher_id = int(pitcher_scrape[0].attrib['href'].split('?id=')[-1])
+        return pitcher, pitcher_id
     def get_players(self, players_scrape, position_scrape, team_scrape, pitcher_scrape, game_num):
         team = self.get_team(team_scrape)
         player_list = []
-        pitcher = self.get_pitcher(pitcher_scrape)
+        pitcher, pitcher_id = self.get_pitcher(pitcher_scrape)
         player_list.append({'fixture':game_num,
-                                'name':pitcher,
+                                'player_name':pitcher,
+                                'player_id':pitcher_id,
                                 'position':'P',
                                 'team':team})
         for player_, position_ in zip(players_scrape, position_scrape):
             position = position_.text
             player_name = player_.attrib['title']
+            player_id = int(player_.attrib['href'].split('?id=')[-1])
             player_list.append({'fixture':game_num,
-                                'name':player_name,
+                                'player_name':player_name,
+                                'player_id':player_id,
                                 'position':position,
                                 'team':team})
         return player_list
