@@ -7,8 +7,7 @@ from io import StringIO
 import subprocess
 
 from lou_machine import config
-from .data_ops import lineup_scraping
-from .data_ops import playerid_mapping
+from lou_machine import data_ops
 
 class update_data(object):
 	def __init__(self):
@@ -23,10 +22,8 @@ class update_data(object):
 		return 'Update Completed in {}'.format((end-start).strftime('%H:%M:%S'))
 
 	def update_lineups(self):
-		from lou_machine import data_ops
-
 		# Daily lineup fetch
-		gl = data_ops.lineup_scraping.daily_lineups()
+		gl = data_ops.scraping.daily_lineups()
 		today_date = datetime.datetime.today().strftime('%Y-%m-%d')
 		pull_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		lineups = pd.DataFrame.from_dict(gl.main()).drop_duplicates()
@@ -36,8 +33,9 @@ class update_data(object):
 		lineups['pull_time'] = pull_time
 
 		# Push dataframe to lineups database
-		con = sqlite3.connect(config.player_db_path)
+		con = sqlite3.connect(config.players_db_path)
 		lineups.to_sql(config.lineups_table, con, if_exists='append', index=False)
+		con.close()
 		print('Daily Lineup Table Updated')
 
 	def update_eventdata(self):
@@ -86,3 +84,13 @@ class update_data(object):
 		# confirm and close
 		con.close()
 		print("Player ID's updated")
+
+	def update_depthchart(self):
+		dc_list = data_ops.scraping.update_depthchart()
+		depth_chart = pd.DataFrame.from_dict(dc_list)
+		depth_chart['pull_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+		con = sqlite3.connect(config.players_db_path)
+		depth_chart.to_sql(config.depthchart_table, con, if_exists='append', index=False)
+		con.close()
+		print('Team Depth Charts updated')
