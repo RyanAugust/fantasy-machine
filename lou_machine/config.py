@@ -1,21 +1,25 @@
-import os
-user = os.environ['USER']
+# import os
+# user = os.environ['USER']
 # lou_machine_dir = '/'.join(os.getcwd().split('/')[:-1])
-lou_machine_dir = os.getcwd()
+# lou_machine_dir = os.getcwd()
 
 # PATHS
 ## Temp dirs
 temp_data_dir = "./data/temp"
 
 ## Game/Event Data
-mlb_data_path = lou_machine_dir + "/data/baseball_data"
-mlb_db_path = lou_machine_dir + "/data/bevent.db"
+mlb_data_path = "./data/baseball_data"
+mlb_db_path = "./data/bevent.db"
 mlb_event_table = 'bevent'
 
-## Lineups
-lineups_db_path = lou_machine_dir + "/data/lineups.db"
+## Players
+players_db_path = "./data/players.db"
 lineups_table = 'daily_lineups'
+roster_table = 'team_rosters'
 
 ## ID mapping
-player_mapping_db = lou_machine_dir + "/data/playerid.db"
+player_mapping_db = "./data/playerid.db"
 player_map_table = 'playerid_map'
+
+## Fantasy Scoring Matrix
+f_scoring = "./data/fscoring.xlsx"
