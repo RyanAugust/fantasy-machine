@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS "depth_charts" (
+  "player_id" INTEGER,
+  "player_name" TEXT,
+  "position" TEXT,
+  "team_name" TEXT(3),
+  "pull_time" TEXT
+);
