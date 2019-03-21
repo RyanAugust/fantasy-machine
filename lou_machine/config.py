@@ -16,6 +16,7 @@ mlb_event_table = 'bevent'
 players_db_path = "./data/players.db"
 lineups_table = 'daily_lineups'
 roster_table = 'team_rosters'
+depthchart_table = 'depth_charts'
 
 ## ID mapping
 player_mapping_db = "./data/playerid.db"
