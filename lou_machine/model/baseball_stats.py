@@ -1,6 +1,10 @@
+import pandas as pd
+from lou_machine import config
+
 class metric_calculator(object):
     def __init__(self, data):
         self.mts = stat_metrics(data)
+        self.fs = f_scoring(data)
         self.metric_fxns = {
             'BA':self.mts.batting_avg,
             'SLG':self.mts.slugging,
@@ -11,7 +15,11 @@ class metric_calculator(object):
             ### Pitching
             'IP':self.mts.inning_pitched,
             'WHIP':self.mts.WHIP,
-            'FIP':self.mts.FIP}
+            'FIP':self.mts.FIP,
+            'QS':self.mts.quality_start,
+            'ER':self.mts.earned_runs,
+            'pwin':self.mts.pitcher_win,
+            }
             
     def calculate(self, player_ids, metric):
         self.metric_exists(metric)
@@ -75,6 +83,20 @@ class stat_metrics(object):
     #####################################
     ############ BATTING  ###############
     #####################################
+    def batter_stolen_base(self, player_ids):
+        sf = len(self.df[(self.df['sbfirst'] == "T") & (self.df['firstrunner'].isin(player_ids))])
+        ss = len(self.df[(self.df['sbsecond'] == "T") & (self.df['secondrunner'].isin(player_ids))])
+        st = len(self.df[(self.df['sbthird'] == "T") & (self.df['thirdrunner'].isin(player_ids))])
+        value = sf + ss + st
+        return value
+
+    def batter_run_scored(self, player_ids):
+        sf = len(self.df[(self.df['sbfirst'] == "T") & (self.df['firstrunner'].isin(player_ids))])
+        ss = len(self.df[(self.df['sbsecond'] == "T") & (self.df['secondrunner'].isin(player_ids))])
+        st = len(self.df[(self.df['sbthird'] == "T") & (self.df['thirdrunner'].isin(player_ids))])
+        value = sf + ss + st
+        return value
+
     def wOBA(self, player_ids):
         df = self.player_df(player_ids=player_ids, stat_type='batter')
         ## General Stats
@@ -189,3 +211,64 @@ class stat_metrics(object):
         k = df_.loc[3]
         value =  (13*hr + 3*(hbp+bb) - 2*k)/ip + self.fg_constants['cFIP']
         return value
+
+    def quality_start(self, player_ids):
+        ### Started game
+        ### Pitched 6 innings
+        ### less than 3 ER
+        value = 0
+        return value
+
+    def earned_runs(self, player_ids):
+        value = 0
+        return value
+
+    def pitcher_win(self, player_ids):
+        value = 0
+        return value
+
+class f_scoring(stat_metrics):
+    def __init__(self, data, site='FD'):
+        self.df = data
+        self.b_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='batter')
+        self.p_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='pitcher')
+        self.site = site
+
+    def _filter_scoring_matrix(self, bat_pitch):
+        assert bat_pitch in ['batter','pitcher'], "Invalid scoring type designation. Pick from [batter,pitcher]"
+        if bat_pitch == 'batter':
+            scoring_matrix = self.b_scoring_matrix[self.site]
+        elif bat_pitch == 'pitcher':
+            scoring_matrix = self.p_scoring_matrix[self.site]
+        else:
+            print("ugh oh")
+        return scoring_matrix
+
+    def get_batter_scoring(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='batter')
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        sm = self._filter_scoring_matrix(bat_pitch='batter')
+        b1 = df_.loc[20]
+        b2 = df_.loc[21]
+        b3 = df_.loc[22]
+        hr = df_.loc[23]
+        bb = df_.loc[14]
+        hbp = df_.loc[16]
+        rbi = df['rbionplay'].sum()
+        rs = self.batter_run_scored(player_ids)
+        sb = self.batter_stolen_base(player_ids)
+        value = (b1*sm['Single'] + b2*sm['Double'] + b3*sm['Triple'] + hr*sm['Home Run'] +
+                (bb+hbp)*sm['Walk'] + rbi*sm['RBI'] + rs*sm['Run Scored'] + sb*sm['Stolen Base'])
+        return value
+
+    def get_pitcher_scoring(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='pitcher')
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        sm = self._filter_scoring_matrix(bat_pitch='pitcher')
+        ip = self.inning_pitched(player_ids=player_ids)
+        qs = self.quality_start(player_ids=player_ids)
+        win = self.pitcher_win(player_ids=player_ids)
+        er = self.earned_run(player_ids=player_ids)
+        k = df_.loc[3]
+        value = (ip*sm['IP'] + qs*sm['Quality Start'] + win*sm['Win'] +
+                 er*sm['ER']  + k*sm['K'])
