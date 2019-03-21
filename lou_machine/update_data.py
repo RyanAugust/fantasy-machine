@@ -36,7 +36,7 @@ class update_data(object):
 		lineups['pull_time'] = pull_time
 
 		# Push dataframe to lineups database
-		con = sqlite3.connect(config.lineups_db_path)
+		con = sqlite3.connect(config.player_db_path)
 		lineups.to_sql(config.lineups_table, con, if_exists='append', index=False)
 		print('Daily Lineup Table Updated')
 
