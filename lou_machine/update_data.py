@@ -32,6 +32,9 @@ class update_data(object):
 		lineups['game_date'] = today_date
 		lineups['pull_time'] = pull_time
 
+		# Correct Teams
+		lineups['team'] = lineups['team'].replace('LAA','ANA')
+
 		# Push dataframe to lineups database
 		con = sqlite3.connect(config.players_db_path)
 		lineups.to_sql(config.lineups_table, con, if_exists='append', index=False)
