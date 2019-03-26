@@ -21,6 +21,7 @@ depthchart_table = 'depth_charts'
 ## ID mapping
 player_mapping_db = "./data/playerid.db"
 player_map_table = 'playerid_map'
+team_abr_table = 'teamabr_map'
 
 ## Fantasy Scoring Matrix
 f_scoring = "./data/fscoring.xlsx"
