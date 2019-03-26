@@ -22,6 +22,8 @@ class metric_calculator(object):
             }
             
     def calculate(self, player_ids, metric):
+        """Pass a list of `player_ids` and a `metric` to be calculated
+        Metrics are checked against a set of available functions"""
         self.metric_exists(metric)
         metric_calc = self.metric_fxns[metric]
         value = metric_calc(player_ids)
@@ -91,10 +93,10 @@ class stat_metrics(object):
         return value
 
     def batter_run_scored(self, player_ids):
-        sf = len(self.df[(self.df['sbfirst'] == "T") & (self.df['firstrunner'].isin(player_ids))])
-        ss = len(self.df[(self.df['sbsecond'] == "T") & (self.df['secondrunner'].isin(player_ids))])
-        st = len(self.df[(self.df['sbthird'] == "T") & (self.df['thirdrunner'].isin(player_ids))])
-        value = sf + ss + st
+        rs1 = len(self.df[(self.df['firstdest'] == 4) & (self.df['firstrunner'].isin(player_ids))])
+        rs2 = len(self.df[(self.df['seconddest'] == 4) & (self.df['secondrunner'].isin(player_ids))])
+        rs3 = len(self.df[(self.df['thirddest'] == 4) & (self.df['thirdrunner'].isin(player_ids))])
+        value = rs1 + rs2 + rs3
         return value
 
     def wOBA(self, player_ids):
