@@ -66,24 +66,27 @@ def update_depthchart():
 	teams = ['oak','ana','hou','tor','atl','mil','stl','chc','ari','la','sf','cle','sea','mia','nym',
 			'was','bal','sd','phi','pit','tex','tb','bos','cin','col','kc','det','min','cws','nyy']
 	for team_name in teams:
-		dc = requests.get(base_url.format(team_name))
-		tree = html.fromstring(dc.content)
-		team_dc = []
-		team_page_dc = tree.xpath("//div[@id='depth_chart']")[0]
-		positions = team_page_dc.xpath("div[contains(@id,'pos_')]")
-		for position in positions:
-			try:
-				position_name = position.xpath("ul/li[@class='position_header']/text()")[0]
-				players = []
-				player_els = position.xpath("ul/li/a[@target='_blank']")
-				for player in player_els:
-					player_name = player.text
-					player_id = int(player.attrib['href'].split('id=')[-1])
-					player_dict = {'player_name':player_name,
-								   'player_id':player_id,
-								   'position':position_name,
-								   'team_name':team_name.upper()}
-					depth_charts.append(player_dict)
-			except: # The final one on every page breaks. This acconts for that
-				pass
+		try:
+			dc = requests.get(base_url.format(team_name))
+			tree = html.fromstring(dc.content)
+			team_dc = []
+			team_page_dc = tree.xpath("//div[@id='depth_chart']")[0]
+			positions = team_page_dc.xpath("div[contains(@id,'pos_')]")
+			for position in positions:
+				try:
+					position_name = position.xpath("ul/li[@class='position_header']/text()")[0]
+					players = []
+					player_els = position.xpath("ul/li/a[@target='_blank']")
+					for player in player_els:
+						player_name = player.text
+						player_id = int(player.attrib['href'].split('id=')[-1])
+						player_dict = {'player_name':player_name,
+									   'player_id':player_id,
+									   'position':position_name,
+									   'team_name':team_name.upper()}
+						depth_charts.append(player_dict)
+				except: # The final one on every page breaks. This acconts for that
+					pass
+		except:
+			print(team_name)
 	return depth_charts
