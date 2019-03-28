@@ -81,10 +81,91 @@ class stat_metrics(object):
             assert "Invalid Player ID/List"
         
         return self.df[self.df[stat_type].isin(player_ids)]
-            
+
+    #####################################
+    ########### BASIC/ALL POS ###########
+    #####################################
+    @staticmethod
+    def _bb(series):
+        return len(series[series == 14])
+    @staticmethod
+    def _ibb(series):
+        return len(series[series == 15])
+    @staticmethod
+    def _hbp(series):
+        return len(series[series == 16])
+    @staticmethod
+    def _1b(series):
+        return len(series[series == 20])
+    @staticmethod
+    def _2b(series):
+        return len(series[series == 21])
+    @staticmethod
+    def _3b(series):
+        return len(series[series == 22])
+    @staticmethod
+    def _hr(series):
+        return len(series[series == 23])
+    @staticmethod
+    def _ab(series):
+        return len(series[series == 'T'])
+    @staticmethod
+    def _sf(series):
+        return len(series[series == 'T'])
+    @staticmethod
+    def _st(series):
+        return len(series[series == 'T'])
+
     #####################################
     ############ BATTING  ###############
     #####################################
+
+    def batting_avg(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='batter')
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        b1 = df_.loc[20]
+        b2 = df_.loc[21]
+        b3 = df_.loc[22]
+        hr = df_.loc[23]
+        ## AB flag count
+        ab = len(df[df['abflag'] == 'T'])
+        value = (b1+b2+b3+hr)/ab
+        return value
+
+    def batting_avg_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
+                                      'abflag':[self._ab]})
+        df_.columns = df_.columns.droplevel(0).tolist()
+        # return df_
+        df_['BA'] = df_[['_1b','_2b','_3b','_hr']].sum(axis=1)/df_['_ab']
+        return_val = df_ if work_columns else df_[['BA']]
+        return return_val
+
+    def slugging(self, player_ids):
+        df = self.player_df(player_ids=player_ids, stat_type='batter')
+        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
+        b1 = df_.loc[20]
+        b2 = df_.loc[21]
+        b3 = df_.loc[22]
+        hr = df_.loc[23]
+        ## AB flag count
+        ab = len(df[df['abflag'] == 'T'])
+        value = (b1+(b2*2)+(b3*3)+(hr*4))/ab
+        return value
+
+    def slugging_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
+                                      'abflag':[self._ab]})
+        df_.columns = df_.columns.droplevel(0).tolist()
+        # return df_
+        df_['SLG'] = (df_[['_1b','_2b','_3b','_hr']]*[1,2,3,4]).sum(axis=1)/df_['_ab']
+        return_val = df_ if work_columns else df_[['SLG']]
+        return return_val
+
     def batter_stolen_base(self, player_ids):
         sf = len(self.df[(self.df['sbfirst'] == "T") & (self.df['firstrunner'].isin(player_ids))])
         ss = len(self.df[(self.df['sbsecond'] == "T") & (self.df['secondrunner'].isin(player_ids))])
@@ -111,7 +192,6 @@ class stat_metrics(object):
         b3 = df_.loc[22]
         hr = df_.loc[23]
         ab = len(df[df['abflag'] == 'T'])
-        ibb = df_.loc[15]
         ## SF calculation
         sf = len(df[df['sfflag'] == 'T'])
         value = (
@@ -123,30 +203,22 @@ class stat_metrics(object):
             self.fg_constants['wHR']*hr)/
                 (ab+bb-ibb+sf+hbp))
         return value
-    
-    def batting_avg(self, player_ids):
-        df = self.player_df(player_ids=player_ids, stat_type='batter')
-        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
-        b1 = df_.loc[20]
-        b2 = df_.loc[21]
-        b3 = df_.loc[22]
-        hr = df_.loc[23]
-        ## AB flag count
-        ab = len(df[df['abflag'] == 'T'])
-        value = (b1+b2+b3+hr)/ab
-        return value
 
-    def slugging(self, player_ids):
-        df = self.player_df(player_ids=player_ids, stat_type='batter')
-        df_ = self.pre_process(df, {'gameid':'count'})['gameid']
-        b1 = df_.loc[20]
-        b2 = df_.loc[21]
-        b3 = df_.loc[22]
-        hr = df_.loc[23]
-        ## AB flag count
-        ab = len(df[df['abflag'] == 'T'])
-        value = (b1+(b2*2)+(b3*3)+(hr*4))/ab
-        return value
+    def wOBA_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb],
+                                      'abflag':[self._ab],
+                                      'sfflag':[self._sf]})
+        df_.columns = df_.columns.droplevel(0).tolist()
+        wOBA_constants = [self.fg_constants['w1B'],self.fg_constants['w2B'],self.fg_constants['w3B'],
+                          self.fg_constants['wHR'],self.fg_constants['wBB'],self.fg_constants['wHBP']]
+        df_['wOBA'] = (
+            (df_[['_1b','_2b','_3b','_hr','_bb','_hbp']]*wOBA_constants).sum(axis=1)/
+            (df_[['_ab','_bb','_sf','_hbp']].sum(axis=1)-df_['_ibb'])
+            )
+        return_val = df_ if work_columns else df_[['wOBA']]
+        return return_val
     
     def wRAA(self, player_ids):
         df = self.player_df(player_ids=player_ids, stat_type='batter')
@@ -159,6 +231,15 @@ class stat_metrics(object):
         sh = len(df[df['shflag'] == 'T'])
         ## SF calculation
         sf = len(df[df['sfflag'] == 'T'])
+        value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
+        return value
+
+    def wRAA_v2(self, df, groupby, player_ids=[], position='batter'):
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        wOBA_df = wOBA_v2(df=df, groupby=groupby, work_columns=True):
+        df_ = df.groupby(groupby).agg({'shflag':[self._sh]})
+        df_ = wOBA_df.join(df_)
         value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
         return value
     
@@ -180,11 +261,13 @@ class stat_metrics(object):
         pos = self.position_determination(player_ids)
         position = self.position_adj[pos]
         pa = len(df)
-        value = wRAA + 0 + position + (20/600)*pa ######################################################### Working
+        value = wRAA + UZR + position + (20/600)*pa
         return value
+
     #####################################
     ############ PITCHING  ##############
     #####################################
+
     def inning_pitched(self, player_ids):
         df = self.player_df(player_ids=player_ids, stat_type='pitcher')
         ip = float(df['outsonplay'].sum())/3.0
@@ -232,8 +315,11 @@ class stat_metrics(object):
 class f_scoring(stat_metrics):
     def __init__(self, data, site='FD'):
         self.df = data
-        self.b_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='batter')
-        self.p_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='pitcher')
+        try:
+            self.b_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='batter')
+            self.p_scoring_matrix = pd.read_excel(config.f_scoring, sheet_name='pitcher')
+        except:
+            print('no scoring matrix file')
         self.site = site
 
     def _filter_scoring_matrix(self, bat_pitch):
