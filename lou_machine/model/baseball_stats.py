@@ -1,5 +1,6 @@
 import pandas as pd
 from lou_machine import config
+import sqlite3
 
 class metric_calculator(object):
     def __init__(self, data):
@@ -45,16 +46,17 @@ class stat_metrics(object):
                         'w3B':1.578,
                         'wHR':2.031,
                         'cFIP':3.161}
-        self.position_adj = {1:0,
-            2:+12.5,
-            3:-12.5,
-            4:+2.5,
-            6:+7.5,
-            5:+2.5,
-            7:-7.5,
-            8:+2.5,
-            9:-7.5,
-            10:-17.5}
+        self.position_adj = {'P':0,
+            'C':+12.5,
+            '1B':-12.5,
+            '2B':+2.5,
+            '3B':+7.5,
+            'SS':+2.5,
+            'LF':-7.5,
+            'CF':+2.5,
+            'RF':-7.5,
+            'OF':-2.5
+            'DH':-17.5}
         
     def pre_process(self, df, process_dict):
 #         event_specs =  pd.DataFrame(
@@ -81,6 +83,13 @@ class stat_metrics(object):
             assert "Invalid Player ID/List"
         
         return self.df[self.df[stat_type].isin(player_ids)]
+
+    def get_positions(self):
+        con = sqlite3.connect(config.player_mapping_db)
+        self.pos_df = pd.read_sql_query(sql="select retro_id, mlb_pos from {}".format(
+            config.player_map_table), con=con).rename(columns={'mlb_pos':'pos'})
+        con.close()
+        return 0
 
     #####################################
     ########### BASIC/ALL POS ###########
@@ -113,7 +122,7 @@ class stat_metrics(object):
     def _sf(series):
         return len(series[series == 'T'])
     @staticmethod
-    def _st(series):
+    def _sh(series):
         return len(series[series == 'T'])
 
     #####################################
@@ -234,24 +243,38 @@ class stat_metrics(object):
         value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
         return value
 
-    def wRAA_v2(self, df, groupby, player_ids=[], position='batter'):
+    def wRAA_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        wOBA_df = wOBA_v2(df=df, groupby=groupby, work_columns=True):
+        wOBA_df = self.wOBA_v2(df=df, groupby=groupby, work_columns=True)
         df_ = df.groupby(groupby).agg({'shflag':[self._sh]})
+        df_.columns = df_.columns.droplevel(0).tolist()
         df_ = wOBA_df.join(df_)
-        value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
-        return value
+        df_['wRAA'] = (((df_['wOBA']-self.fg_constants['wOBA'])/
+                    self.fg_constants['wOBAScale'])*df_[['_ab','_bb','_hbp','_sf','_sh']].sum(axis=1))
+        return_val = df_ if work_columns else df_[['wRAA']]
+        return return_val
     
     def UZR(self, player_ids): ########################################################################## Needs implementation
         df = self.player_df(player_ids=player_ids, stat_type='batter')
         value = 0
         return value
+
+    def UZR_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        return 0 
     
     def position_determination(self, player_ids):
         df = self.player_df(player_ids=player_ids, stat_type='batter')
         pos_group = df[['gameid','defensiveposition']].groupby('defensiveposition').count()
         position = pos_group.sort_values('gameid', ascending=False).index.tolist()[0]
+        return position
+
+    def position_determination_v2(self, df):
+        try:
+            len(self.pos_df)
+        except:
+            self.get_positions()
+        position = df.merge(self.pos_df, left_on='batter', right_on='retro_id')
         return position
     
     def fWAR(self, player_ids):
@@ -263,6 +286,23 @@ class stat_metrics(object):
         pa = len(df)
         value = wRAA + UZR + position + (20/600)*pa
         return value
+
+    def fWAR_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        wRAA = self.wRAA_v2(df=df, groupby=groupby, work_columns=True)
+        # UZR = self.UZR_v2(df=df, groupby=groupby, work_columns=True) ############## UNTIL FIELDING IS COMPLETE
+        df = self.position_determination_v2(df=df)
+        df['pos_adj'] = df['pos'].apply(lambda pos: self.position_adj[pos])
+        df_ = df.groupby(groupby).agg({'pos_adj':'mean',
+                                       'gameid':'count'}).rename(columns={'gameid':'pa'})
+        df_ = df_.join([wRAA])#,UZR]) ############## UNTIL FIELDING IS COMPLETE
+        df_['UZR'] = 0 ############## UNTIL FIELDING IS COMPLETE
+        df_['fWAR'] = df_[['wRAA','UZR','pos_adj']].sum(axis=1) + (20/600)*df_['pa']
+        return_val = df_ if work_columns else df_[['fWAR']]
+        return return_val
+
+
 
     #####################################
     ############ PITCHING  ##############
