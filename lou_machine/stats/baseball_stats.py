@@ -91,6 +91,12 @@ class stat_metrics(object):
         con.close()
         return 0
 
+    def needed_col_check(needed_cols, df_cols):
+        if set(needed_cols) & set(df_cols) == set(needed_cols):
+            return True
+        else:
+            return False
+
     #####################################
     ########### BASIC/ALL POS ###########
     #####################################
@@ -122,7 +128,7 @@ class stat_metrics(object):
     def _sf(series):
         return len(series[series == 'T'])
     @staticmethod
-    def _sh(series):
+    def _st(series):
         return len(series[series == 'T'])
 
     #####################################
@@ -142,12 +148,15 @@ class stat_metrics(object):
         return value
 
     def batting_avg_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        needed_cols = ['_1','_2b','_3b','_hr','_ab']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
-                                      'abflag':[self._ab]})
-        df_.columns = df_.columns.droplevel(0).tolist()
-        # return df_
+        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
+                                          'abflag':[self._ab]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
         df_['BA'] = df_[['_1b','_2b','_3b','_hr']].sum(axis=1)/df_['_ab']
         return_val = df_ if work_columns else df_[['BA']]
         return return_val
@@ -165,11 +174,15 @@ class stat_metrics(object):
         return value
 
     def slugging_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        needed_cols = ['_1','_2b','_3b','_hr','_ab']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
-                                      'abflag':[self._ab]})
-        df_.columns = df_.columns.droplevel(0).tolist()
+        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
+                                          'abflag':[self._ab]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
         # return df_
         df_['SLG'] = (df_[['_1b','_2b','_3b','_hr']]*[1,2,3,4]).sum(axis=1)/df_['_ab']
         return_val = df_ if work_columns else df_[['SLG']]
@@ -214,12 +227,16 @@ class stat_metrics(object):
         return value
 
     def wOBA_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_ab','_bb','_sf','_ibb']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb],
-                                      'abflag':[self._ab],
-                                      'sfflag':[self._sf]})
-        df_.columns = df_.columns.droplevel(0).tolist()
+        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb],
+                                          'abflag':[self._ab],
+                                          'sfflag':[self._sf]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
         wOBA_constants = [self.fg_constants['w1B'],self.fg_constants['w2B'],self.fg_constants['w3B'],
                           self.fg_constants['wHR'],self.fg_constants['wBB'],self.fg_constants['wHBP']]
         df_['wOBA'] = (
@@ -243,12 +260,15 @@ class stat_metrics(object):
         value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
         return value
 
-    def wRAA_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+    def wRAA_v2(self, df, groupby, player_ids=[], position='batter'):
+        df
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        wOBA_df = self.wOBA_v2(df=df, groupby=groupby, work_columns=True)
-        df_ = df.groupby(groupby).agg({'shflag':[self._sh]})
-        df_.columns = df_.columns.droplevel(0).tolist()
+        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'shflag':[self._sh]})
+        else:
+            df_ = df.groupby(groupby).sum()
+        wOBA_df = wOBA_v2(df=df, groupby=groupby, work_columns=True)
         df_ = wOBA_df.join(df_)
         df_['wRAA'] = (((df_['wOBA']-self.fg_constants['wOBA'])/
                     self.fg_constants['wOBAScale'])*df_[['_ab','_bb','_hbp','_sf','_sh']].sum(axis=1))
@@ -259,7 +279,7 @@ class stat_metrics(object):
         df = self.player_df(player_ids=player_ids, stat_type='batter')
         value = 0
         return value
-
+    
     def UZR_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
         return 0 
     
@@ -301,8 +321,6 @@ class stat_metrics(object):
         df_['fWAR'] = df_[['wRAA','UZR','pos_adj']].sum(axis=1) + (20/600)*df_['pa']
         return_val = df_ if work_columns else df_[['fWAR']]
         return return_val
-
-
 
     #####################################
     ############ PITCHING  ##############
