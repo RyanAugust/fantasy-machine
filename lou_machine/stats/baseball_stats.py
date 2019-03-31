@@ -13,6 +13,12 @@ class metric_calculator(object):
             'wRAA':self.mts.wRAA,
             'UZR':self.mts.UZR,
             'fWAR':self.mts.fWAR,
+            'BA_v2':self.mts.batting_avg_v2,
+            'SLG_v2':self.mts.slugging_v2,
+            'wOBA_v2':self.mts.wOBA_v2,
+            'wRAA_v2':self.mts.wRAA_v2,
+            'UZR_v2':self.mts.UZR_v2,
+            'fWAR_v2':self.mts.fWAR_v2,
             ### Pitching
             'IP':self.mts.inning_pitched,
             'WHIP':self.mts.WHIP,
@@ -20,6 +26,12 @@ class metric_calculator(object):
             'QS':self.mts.quality_start,
             'ER':self.mts.earned_runs,
             'pwin':self.mts.pitcher_win,
+            # 'IP':self.mts.inning_pitched,
+            # 'WHIP':self.mts.WHIP,
+            'FIP_v2':self.mts.FIP_v2,
+            # 'QS':self.mts.quality_start,
+            # 'ER':self.mts.earned_runs,
+            # 'pwin':self.mts.pitcher_win,
             }
             
     def calculate(self, player_ids, metric):
@@ -29,6 +41,13 @@ class metric_calculator(object):
         metric_calc = self.metric_fxns[metric]
         value = metric_calc(player_ids)
         return value
+
+    def calculate_v2(self, df, groupby, metric, position='batter', player_ids=[]):
+        """"""
+        self.metric_exists(metric)
+        metric_calc = self.metric_fxns[metric]
+        return_val = metric_calc(df=df, groupby=groupby, position=position, player_ids=player_ids)
+        return return_val
         
     def metric_exists(self, metric):
         assert metric in self.metric_fxns.keys(), "Invalid metric, metric not defined"
@@ -55,7 +74,7 @@ class stat_metrics(object):
             'LF':-7.5,
             'CF':+2.5,
             'RF':-7.5,
-            'OF':-2.5
+            'OF':-2.5,
             'DH':-17.5}
         
     def pre_process(self, df, process_dict):
@@ -91,6 +110,7 @@ class stat_metrics(object):
         con.close()
         return 0
 
+    @staticmethod
     def needed_col_check(needed_cols, df_cols):
         if set(needed_cols) & set(df_cols) == set(needed_cols):
             return True
@@ -100,6 +120,9 @@ class stat_metrics(object):
     #####################################
     ########### BASIC/ALL POS ###########
     #####################################
+    @staticmethod
+    def _k(series):
+        return len(series[series == 3])
     @staticmethod
     def _bb(series):
         return len(series[series == 14])
@@ -130,6 +153,10 @@ class stat_metrics(object):
     @staticmethod
     def _st(series):
         return len(series[series == 'T'])
+        
+    @staticmethod
+    def _ip(series):
+        return float(series.sum())/3.0
 
     #####################################
     ############ BATTING  ###############
@@ -151,7 +178,7 @@ class stat_metrics(object):
         needed_cols = ['_1','_2b','_3b','_hr','_ab']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
             df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
                                           'abflag':[self._ab]})
             df_.columns = df_.columns.droplevel(0).tolist()
@@ -177,7 +204,7 @@ class stat_metrics(object):
         needed_cols = ['_1','_2b','_3b','_hr','_ab']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
             df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr],
                                           'abflag':[self._ab]})
             df_.columns = df_.columns.droplevel(0).tolist()
@@ -230,7 +257,7 @@ class stat_metrics(object):
         needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_ab','_bb','_sf','_ibb']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
             df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb],
                                           'abflag':[self._ab],
                                           'sfflag':[self._sf]})
@@ -261,11 +288,12 @@ class stat_metrics(object):
         return value
 
     def wRAA_v2(self, df, groupby, player_ids=[], position='batter'):
-        df
+        needed_cols = ['_sh']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
-        if needed_col_check(needed_cols, df.columns.tolist()) == False:
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
             df_ = df.groupby(groupby).agg({'shflag':[self._sh]})
+            df_.columns = df_.columns.droplevel(0).tolist()
         else:
             df_ = df.groupby(groupby).sum()
         wOBA_df = wOBA_v2(df=df, groupby=groupby, work_columns=True)
@@ -354,6 +382,22 @@ class stat_metrics(object):
         k = df_.loc[3]
         value =  (13*hr + 3*(hbp+bb) - 2*k)/ip + self.fg_constants['cFIP']
         return value
+
+    def FIP_v2(self, df, groupby, player_ids=[], position='pitcher', work_columns=False):
+        needed_cols = ['_hr','_bb','_hbp','_k']
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'outsonplay':[self._ip],
+                                           'eventtype':[self._hbp,self._bb,self._hr,self._k]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
+        df_['FIP'] = ((13*df_['_hr']) + 
+                      (3*df_[['_hbp','_bb']].sum(axis=1)) - 
+                      (2*df_['_k']))/df_['_ip'] + self.fg_constants['cFIP']
+        return_val = df_ if work_columns else df_[['FIP']]
+        return return_val
 
     def quality_start(self, player_ids):
         ### Started game
