@@ -1,4 +1,4 @@
-import pandas as pd
+import pandas
 import sqlite3
 import datetime
 import requests
@@ -26,7 +26,7 @@ class update_data(object):
 		gl = data_ops.scraping.daily_lineups()
 		today_date = datetime.datetime.today().strftime('%Y-%m-%d')
 		pull_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		lineups = pd.DataFrame.from_dict(gl.main()).drop_duplicates()
+		lineups = pandas.DataFrame.from_dict(gl.main()).drop_duplicates()
 
 		# Add dates to dataframe
 		lineups['game_date'] = today_date
@@ -50,7 +50,7 @@ class update_data(object):
 		bash_command = "wine data/temp/bevent -y {} -f 0-96 data/temp/{}???.EV? > data/temp/merged.csv".format(current_year,
 																						current_year) ## Fix Pathing
 		subprocess.call(bash_command, shell=True)
-		df = pd.read_csv("{}/merged.csv".format()) ## Fix Pathing
+		df = pandas.read_csv("{}/merged.csv".format()) ## Fix Pathing
 		return df
 
 	def download_eventfiles(self, current_year):
@@ -65,19 +65,19 @@ class update_data(object):
 		con = sqlite3.connect(config.mlb_db_path)
 		query = """SELECT DISTINCT gameid FROM {} WHERE gameid like '%{}%'""".format(config.mlb_event_table,
 																				current_year),
-		existing_gids = pd.read_sql_query(query ,con)
-		pd.read_
+		existing_gids = pandas.read_sql_query(query ,con)
+		# pd.read_
 		
 	def update_mapping(self):
 		# Fetch remote player id mapping
 		name_map_url = "http://crunchtimebaseball.com/master.csv"
 		name_map_content = requests.get(name_map_url).content.decode('utf-8','ignore')
-		name_map = pd.read_csv(StringIO(name_map_content))
+		name_map = pandas.read_csv(StringIO(name_map_content))
 
 		# Connect and compare updated id map with existing local map
 		con = sqlite3.connect(config.player_mapping_db)
 		try:
-			existing_players = pd.read_sql('select * from {}'.format(config.player_map_table), con=con)
+			existing_players = pandas.read_sql('select * from {}'.format(config.player_map_table), con=con)
 			final_map = existing_players.append(name_map).drop_duplicates()
 		except:
 			final_map = name_map
@@ -90,16 +90,13 @@ class update_data(object):
 
 	def update_depthchart(self):
 		dc_list = data_ops.scraping.update_depthchart()
-		depth_chart = pd.DataFrame.from_dict(dc_list)
+		depth_chart = pandas.DataFrame.from_dict(dc_list)
 		depth_chart['pull_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 		con = sqlite3.connect(config.players_db_path)
 		depth_chart.to_sql(config.depthchart_table, con, if_exists='append', index=False)
 		con.close()
 		print('Team Depth Charts updated')
-
-import sqlite3
-import pandas
 
 class import_data(object):
 	def __init__(self):
