@@ -19,7 +19,7 @@ roster_table = 'team_rosters'
 depthchart_table = 'depth_charts'
 
 ## ID mapping
-player_mapping_db = "./data/playerid.db"
+id_mapping_db = "./data/id_mapping.db"
 player_map_table = 'playerid_map'
 team_abr_table = 'teamabr_map'
 
