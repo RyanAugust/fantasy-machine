@@ -104,7 +104,7 @@ class stat_metrics(object):
         return self.df[self.df[stat_type].isin(player_ids)]
 
     def get_positions(self):
-        con = sqlite3.connect(config.player_mapping_db)
+        con = sqlite3.connect(config.id_mapping_db)
         self.pos_df = pd.read_sql_query(sql="select retro_id, mlb_pos from {}".format(
             config.player_map_table), con=con).rename(columns={'mlb_pos':'pos'})
         con.close()
@@ -151,9 +151,8 @@ class stat_metrics(object):
     def _sf(series):
         return len(series[series == 'T'])
     @staticmethod
-    def _st(series):
+    def _sh(series):
         return len(series[series == 'T'])
-        
     @staticmethod
     def _ip(series):
         return float(series.sum())/3.0
@@ -287,7 +286,7 @@ class stat_metrics(object):
         value = ((wOBA-self.fg_constants['wOBA'])/self.fg_constants['wOBAScale'])*(ab+bb+hbp+sf+sh)
         return value
 
-    def wRAA_v2(self, df, groupby, player_ids=[], position='batter'):
+    def wRAA_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
         needed_cols = ['_sh']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
@@ -296,7 +295,7 @@ class stat_metrics(object):
             df_.columns = df_.columns.droplevel(0).tolist()
         else:
             df_ = df.groupby(groupby).sum()
-        wOBA_df = wOBA_v2(df=df, groupby=groupby, work_columns=True)
+        wOBA_df = self.wOBA_v2(df=df, groupby=groupby, work_columns=True)
         df_ = wOBA_df.join(df_)
         df_['wRAA'] = (((df_['wOBA']-self.fg_constants['wOBA'])/
                     self.fg_constants['wOBAScale'])*df_[['_ab','_bb','_hbp','_sf','_sh']].sum(axis=1))
