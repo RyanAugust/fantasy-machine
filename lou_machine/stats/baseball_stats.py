@@ -19,6 +19,7 @@ class metric_calculator(object):
             'wRAA_v2':self.mts.wRAA_v2,
             'UZR_v2':self.mts.UZR_v2,
             'fWAR_v2':self.mts.fWAR_v2,
+            'base':self.mts.get_base_metrics,
             ### Pitching
             'IP':self.mts.inning_pitched,
             'WHIP':self.mts.WHIP,
@@ -42,11 +43,11 @@ class metric_calculator(object):
         value = metric_calc(player_ids)
         return value
 
-    def calculate_v2(self, df, groupby, metric, position='batter', player_ids=[]):
+    def calculate_v2(self, df, groupby, metric, position='batter', player_ids=[], work_columns=False):
         """"""
         self.metric_exists(metric)
         metric_calc = self.metric_fxns[metric]
-        return_val = metric_calc(df=df, groupby=groupby, position=position, player_ids=player_ids)
+        return_val = metric_calc(df=df, groupby=groupby, position=position, player_ids=player_ids, work_columns=work_columns)
         return return_val
         
     def metric_exists(self, metric):
@@ -145,6 +146,9 @@ class stat_metrics(object):
     def _hr(series):
         return len(series[series == 23])
     @staticmethod
+    def _rbi(series):
+        return series.sum()
+    @staticmethod
     def _ab(series):
         return len(series[series == 'T'])
     @staticmethod
@@ -159,6 +163,24 @@ class stat_metrics(object):
 
     #####################################
     ############ BATTING  ###############
+    #####################################
+    ########## Get Raw Metric ###########
+
+    def get_base_metrics(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_ibb','_k','_ab','_bb','_sf','_sh','_rbi']
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb,self._k],
+                                          'abflag':[self._ab],
+                                          'sfflag':[self._sf],
+                                          'shflag':[self._sh],
+                                          'rbionplay':[self._rbi]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
+        return df_
+
     #####################################
 
     def batting_avg(self, player_ids):
@@ -296,7 +318,7 @@ class stat_metrics(object):
         else:
             df_ = df.groupby(groupby).sum()
         wOBA_df = self.wOBA_v2(df=df, groupby=groupby, work_columns=True)
-        df_ = wOBA_df.join(df_)
+        df_ = wOBA_df.join(df_,rsuffix='_wOBA')
         df_['wRAA'] = (((df_['wOBA']-self.fg_constants['wOBA'])/
                     self.fg_constants['wOBAScale'])*df_[['_ab','_bb','_hbp','_sf','_sh']].sum(axis=1))
         return_val = df_ if work_columns else df_[['wRAA']]
@@ -340,7 +362,10 @@ class stat_metrics(object):
         wRAA = self.wRAA_v2(df=df, groupby=groupby, work_columns=True)
         # UZR = self.UZR_v2(df=df, groupby=groupby, work_columns=True) ############## UNTIL FIELDING IS COMPLETE
         df = self.position_determination_v2(df=df)
-        df['pos_adj'] = df['pos'].apply(lambda pos: self.position_adj[pos])
+        if 'date' not in groupby:
+            df['pos_adj'] = df['pos'].apply(lambda pos: self.position_adj[pos])
+        else:
+            df['pos_adj'] = 0
         df_ = df.groupby(groupby).agg({'pos_adj':'mean',
                                        'gameid':'count'}).rename(columns={'gameid':'pa'})
         df_ = df_.join([wRAA])#,UZR]) ############## UNTIL FIELDING IS COMPLETE
@@ -449,6 +474,23 @@ class f_scoring(stat_metrics):
         value = (b1*sm['Single'] + b2*sm['Double'] + b3*sm['Triple'] + hr*sm['Home Run'] +
                 (bb+hbp)*sm['Walk'] + rbi*sm['RBI'] + rs*sm['Run Scored'] + sb*sm['Stolen Base'])
         return value
+
+    def get_batter_scoring_v2(self, df, groupby, player_ids=[], position='batter', work_columns=False):
+        needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_rbi']
+        if len(player_ids) > 0:
+            df = self.player_df(player_ids=player_ids, stat_type=position)
+        if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
+            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb],
+                                           'rbionplay':[self._rbi]})
+            df_.columns = df_.columns.droplevel(0).tolist()
+        else:
+            df_ = df.groupby(groupby).sum()
+        sm = self._filter_scoring_matrix(bat_pitch='batter')
+        df_['f_score'] = (df_[['_1b','_2b','_3b','_hr','_bb','_hbp','_rbi']
+                    ]*[sm['Single'],sm['Double'],sm['Triple'],
+                       sm['Home Run'],sm['Walk'],sm['Walk'],sm['RBI']]).sum(axis=1)
+        return_val = df_ if work_columns else df_[['f_score']]
+        return return_val
 
     def get_pitcher_scoring(self, player_ids):
         df = self.player_df(player_ids=player_ids, stat_type='pitcher')
