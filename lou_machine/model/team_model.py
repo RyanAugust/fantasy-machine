@@ -1,3 +1,37 @@
+class team_model(object):
+    def __init__(self, lineups, data):
+        self.fixture_lineup = lineups
+        self.data = data
+        self.team0, self.team1 = self.determine_teams(lineups['team'])
+        self.team0_sp = self.find_starting_pitcher(lineup=lineups, team=self.team0)
+        self.team1_sp = self.find_starting_pitcher(lineup=lineups, team=self.team1)
+        self.team0_batters = self.find_batters(lineup=lineups, team=self.team0)
+        self.team1_batters = self.find_batters(lineup=lineups, team=self.team1)
+        
+    def determine_teams(self, lineup_series):
+        assert len(set(lineup_series)) == 2, "lineup contains more than 2 teams!"
+        return set(lineup_series)
+    
+    def find_starting_pitcher(self, lineup, team):
+        pitcher_id = lineup[(lineup['team'] == team) & (lineup['position'] == 'P')]['retro_id'].tolist()
+        assert len(pitcher_id) == 1, "Multiple starting pitchers found"
+        return pitcher_id[0]
+    
+    def find_batters(self, lineup, team):
+        batter_ids = lineup[(lineup['team'] == team) & (lineup['position'] != 'P')]['retro_id'].tolist()
+        assert len(batter_ids) in [8,9,10], "Too many players in starting lineup"
+        return batter_ids
+    
+    def batter_dict(self, batters, pitcher=None):
+        groupby = ['batter'] if pitcher != None else ['batter','pitcher']
+        batter_wRAA = calc.calculate_v2(df=self.data,
+                                        groupby=groupby, 
+                                        position='batter',
+                                        player_ids=batters,
+                                        metric='wRAA')
+        return batter_wRAA
+
+"""
 from lou_machine import update_data, import_data
 from lou_machine import config
 from lou_machine import stats
@@ -9,7 +43,7 @@ import sqlite3
 import numpy as np
 from sklearn import linear_model
 import matplotlib.pyplot as plt
-%matplotlib inline
+# %matplotlib inline
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -80,3 +114,5 @@ class team_model(object):
         return batter_wRAA
 
 # model = team_model(lineups=lineups_plus[lineups_plus['fixture'] == 1], data=event)
+
+"""
