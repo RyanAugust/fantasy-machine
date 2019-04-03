@@ -13,7 +13,8 @@ class daily_lineups(object):
 							   'pitcher':"//div[{}][{}]/div[2]/div[2]/ul[{}]/li[1]/div/a",
 							   'players':"//div[{}][{}]/div[2]/div[2]/ul[{}]/li/a",
 							   'positions':"//div[{}][{}]/div[2]/div[2]/ul[{}]/li/div[@class='lineup__pos']",
-							   'lineup_status':"//div[{}][{}]/div[2]/div[2]/ul[{}]/li[2]"}
+							   'lineup_status':"//div[{}][{}]/div[2]/div[2]/ul[{}]/li[2]",
+							   'lineup_odds':"//div[{}][{}]/div[2]/div[3]/div[2]/div[@class='lineup__odds']/div[1]/text()"}
 	def main(self):
 		games = []
 		games_today = len(self.tree.xpath("//div[{}]".format(self.div_selection)))
@@ -27,10 +28,11 @@ class daily_lineups(object):
 				position_temp = self.tree.xpath(self.info_locations['positions'].format(self.div_selection,game_num,team))
 				player_temp = self.tree.xpath(self.info_locations['players'].format(self.div_selection,game_num,team))
 				lineup_status_temp = self.tree.xpath(self.info_locations['lineup_status'].format(self.div_selection,game_num,team))
-				game += self.get_players(player_temp, position_temp, team_temp, pitcher_temp, lineup_status_temp, game_num)
+				lineup_odds_temp = self.tree.xpath(self.info_locations['lineup_odds'].format(self.div_selection,game_num))
+				game += self.get_players(player_temp, position_temp, team_temp, pitcher_temp, lineup_status_temp, game_num,lineup_odds_temp)
 			games += game
 		return games
-		
+
 
 	def get_team(self, team_scrape):
 		try:
@@ -56,9 +58,13 @@ class daily_lineups(object):
 			lineup_status = 'None'
 		return lineup_status
 
-	def get_players(self, players_scrape, position_scrape, team_scrape, pitcher_scrape, lineup_status_scrape, game_num):
+	def get_players(self, players_scrape, position_scrape, team_scrape, pitcher_scrape, lineup_status_scrape, game_num, lineup_odds_temp):
 		team = self.get_team(team_scrape)
 		player_list = []
+		try:
+			lineup_odds = ' '.join(lineup_odds_temp[0].split(' ')[1:])
+		except:
+			lineup_odds = ''
 		lineup_status = self.get_lineup_status(lineup_status_scrape)
 		pitcher, pitcher_id = self.get_pitcher(pitcher_scrape)
 		player_list.append({'fixture':game_num,
@@ -66,7 +72,8 @@ class daily_lineups(object):
 								'player_id':pitcher_id,
 								'position':'P',
 								'team':team,
-								'lineup_status':lineup_status})
+								'lineup_status':lineup_status,
+								'lineup_odds':lineup_odds})
 		for player_, position_ in zip(players_scrape, position_scrape):
 			position = position_.text
 			player_name = player_.attrib['title']
@@ -76,7 +83,8 @@ class daily_lineups(object):
 								'player_id':player_id,
 								'position':position,
 								'team':team,
-								'lineup_status':lineup_status})
+								'lineup_status':lineup_status,
+								'lineup_odds':lineup_odds})
 		return player_list
 
 def update_depthchart():
