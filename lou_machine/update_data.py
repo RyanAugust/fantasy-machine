@@ -3,7 +3,8 @@ import sqlite3
 import datetime
 import requests
 import zipfile
-from io import StringIO
+
+import io
 import subprocess
 
 from lou_machine import config
@@ -45,12 +46,13 @@ class update_data(object):
 		current_year = datetime.datetime.now().strftime('%Y')
 		self.download_eventfiles(current_year=current_year)
 		df = self.convert_raw_eventfiles(current_year=current_year)
+		return len(df)
 
 	def convert_raw_eventfiles(self, current_year):
-		bash_command = "wine data/temp/bevent -y {} -f 0-96 data/temp/{}???.EV? > data/temp/merged.csv".format(current_year,
+		bash_command = "wine ./data/temp/bevent.exe -y {} -f 0-96 ./data/temp/{}???.EV? > data/temp/merged.csv".format(current_year,
 																						current_year) ## Fix Pathing
 		subprocess.call(bash_command, shell=True)
-		df = pandas.read_csv("{}/merged.csv".format()) ## Fix Pathing
+		df = pandas.read_csv("{}/merged.csv".format(temp_data_dir)) ## Fix Pathing
 		return df
 
 	def download_eventfiles(self, current_year):
@@ -72,7 +74,7 @@ class update_data(object):
 		# Fetch remote player id mapping
 		name_map_url = "http://crunchtimebaseball.com/master.csv"
 		name_map_content = requests.get(name_map_url).content.decode('utf-8','ignore')
-		name_map = pandas.read_csv(StringIO(name_map_content))
+		name_map = pandas.read_csv(io.StringIO(name_map_content))
 
 		# Connect and compare updated id map with existing local map
 		con = sqlite3.connect(config.player_mapping_db)
