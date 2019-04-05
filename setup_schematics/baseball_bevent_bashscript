@@ -1,1 +1,1 @@
-for i in {1970..2018}; do wine bevent -y $i -f 0-96 ${i}???.EV? > ${i}_comb.csv; done
+for i in {1970..2018}; do wine bevent.exe -y $i -f 0-96 ${i}???.EV? > ${i}_comb.csv; done
