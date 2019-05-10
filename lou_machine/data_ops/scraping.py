@@ -22,14 +22,17 @@ class daily_lineups(object):
 		for game_num in range(games_today):
 			game_num = game_num + 1
 			game = []
-			for team in teams:
-				team_temp = self.tree.xpath(self.info_locations['team'].format(self.div_selection,game_num,team))
-				pitcher_temp = self.tree.xpath(self.info_locations['pitcher'].format(self.div_selection,game_num,team))
-				position_temp = self.tree.xpath(self.info_locations['positions'].format(self.div_selection,game_num,team))
-				player_temp = self.tree.xpath(self.info_locations['players'].format(self.div_selection,game_num,team))
-				lineup_status_temp = self.tree.xpath(self.info_locations['lineup_status'].format(self.div_selection,game_num,team))
-				lineup_odds_temp = self.tree.xpath(self.info_locations['lineup_odds'].format(self.div_selection,game_num))
-				game += self.get_players(player_temp, position_temp, team_temp, pitcher_temp, lineup_status_temp, game_num,lineup_odds_temp)
+			try:
+				for team in teams:
+					team_temp = self.tree.xpath(self.info_locations['team'].format(self.div_selection,game_num,team))
+					pitcher_temp = self.tree.xpath(self.info_locations['pitcher'].format(self.div_selection,game_num,team))
+					position_temp = self.tree.xpath(self.info_locations['positions'].format(self.div_selection,game_num,team))
+					player_temp = self.tree.xpath(self.info_locations['players'].format(self.div_selection,game_num,team))
+					lineup_status_temp = self.tree.xpath(self.info_locations['lineup_status'].format(self.div_selection,game_num,team))
+					lineup_odds_temp = self.tree.xpath(self.info_locations['lineup_odds'].format(self.div_selection,game_num))
+					game += self.get_players(player_temp, position_temp, team_temp, pitcher_temp, lineup_status_temp, game_num,lineup_odds_temp)
+			except:
+				pass
 			games += game
 		return games
 

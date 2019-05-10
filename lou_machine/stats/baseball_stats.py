@@ -171,12 +171,32 @@ class stat_metrics(object):
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
         if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
-            df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb,self._k],
-                                          'abflag':[self._ab],
-                                          'sfflag':[self._sf],
-                                          'shflag':[self._sh],
-                                          'rbionplay':[self._rbi]})
-            df_.columns = df_.columns.droplevel(0).tolist()
+            # df_ = df.groupby(groupby).agg({'eventtype':[self._1b,self._2b,self._3b,self._hr,self._hbp,self._bb,self._ibb,self._k],
+            #                               'abflag':[self._ab],
+            #                               'sfflag':[self._sf],
+            #                               'shflag':[self._sh],
+            #                               'rbionplay':[self._rbi]})
+            # df_.columns = df_.columns.droplevel(0).tolist()
+            event_col_conversion = {
+                3:'_k',
+                14:'_bb',
+                15:'_ibb',
+                16:'_hbp',
+                20:'_1b',
+                21:'_2b',
+                22:'_3b',
+                23:'_hr'}
+            ## Create calculate dataframes
+            _event = df.groupby(groupby + ['eventtype'])['gameid'].count().unstack(level=-1)
+            b_event = df[groupby + ['abflag','sfflag','shflag','rbionplay']].groupby(groupby).sum()
+            ## Rename columns
+            _event = _event[list(event_col_conversion.keys())].rename(columns=event_col_conversion)
+            b_event.rename(columns={'abflag':'_ab',
+                                    'shflag':'_sh',
+                                    'sfflag':'_sf',
+                                    'rbionplay':'_rbi'}, inplace=True)
+            ## Join tables
+            df_ = _event.join(b_event).fillna(0)
         else:
             df_ = df.groupby(groupby).sum()
         return df_
