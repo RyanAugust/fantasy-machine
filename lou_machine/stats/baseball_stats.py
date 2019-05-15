@@ -167,7 +167,7 @@ class stat_metrics(object):
     ########## Get Raw Metric ###########
 
     def get_base_metrics(self, df, groupby, player_ids=[], position='batter', work_columns=False):
-        needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_ibb','_k','_ab','_bb','_sf','_sh','_rbi']
+        needed_cols = ['_1b','_2b','_3b','_hr','_bb','_hbp','_ibb','_k','_ab','_bb','_sf','_sh','_rbi','_ip']
         if len(player_ids) > 0:
             df = self.player_df(player_ids=player_ids, stat_type=position)
         if self.needed_col_check(needed_cols, df.columns.tolist()) == False:
@@ -188,13 +188,15 @@ class stat_metrics(object):
                 23:'_hr'}
             ## Create calculate dataframes
             _event = df.groupby(groupby + ['eventtype'])['gameid'].count().unstack(level=-1)
-            b_event = df[groupby + ['abflag','sfflag','shflag','rbionplay']].groupby(groupby).sum()
+            b_event = df[groupby + ['abflag','sfflag','shflag','rbionplay','outsonplay']].groupby(groupby).sum()
+            b_event['outsonplay'] = b_event['outsonplay']/3.0
             ## Rename columns
             _event = _event[list(event_col_conversion.keys())].rename(columns=event_col_conversion)
             b_event.rename(columns={'abflag':'_ab',
                                     'shflag':'_sh',
                                     'sfflag':'_sf',
-                                    'rbionplay':'_rbi'}, inplace=True)
+                                    'rbionplay':'_rbi',
+                                    'outsonplay':'_ip'}, inplace=True)
             ## Join tables
             df_ = _event.join(b_event).fillna(0)
         else:
