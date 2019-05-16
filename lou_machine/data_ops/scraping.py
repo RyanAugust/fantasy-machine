@@ -1,10 +1,11 @@
-import requests
-from bs4 import BeautifulSoup
-from lxml import html
-from lxml import etree
 
 class daily_lineups(object):
 	def __init__(self):
+
+		import requests
+		from lxml import html
+		from lxml import etree
+
 		self.lineup_url = 'https://www.rotowire.com/baseball/daily_lineups.htm'
 		self.page = requests.get(self.lineup_url)
 		self.tree = html.fromstring(self.page.content)
@@ -91,6 +92,11 @@ class daily_lineups(object):
 		return player_list
 
 def update_depthchart():
+	
+	import requests
+	from lxml import html
+	from lxml import etree
+	
 	depth_charts = []
 	base_url = 'http://oakland.athletics.mlb.com/team/depth_chart/?c_id={}'
 	teams = ['oak','ana','hou','tor','atl','mil','stl','chc','ari','la','sf','cle','sea','mia','nym',
