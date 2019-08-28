@@ -32,10 +32,10 @@ class team_model(object):
         return batter_wRAA
 
 """
-from lou_machine import update_data, import_data
-from lou_machine import config
-from lou_machine import stats
-from lou_machine import model
+from fantasy_machine import update_data, import_data
+from fantasy_machine import config
+from fantasy_machine import stats
+from fantasy_machine import model
 
 import pandas as pd
 import sqlite3

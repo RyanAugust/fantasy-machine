@@ -3,7 +3,7 @@ import requests
 from io import StringIO
 import sqlite3
 
-from lou_machine import config
+from fantasy_machine import config
 
 def update_mapping():
 	# Fetch remote player id mapping

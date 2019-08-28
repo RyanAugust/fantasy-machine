@@ -1,7 +1,7 @@
 # import os
 # user = os.environ['USER']
-# lou_machine_dir = '/'.join(os.getcwd().split('/')[:-1])
-# lou_machine_dir = os.getcwd()
+# fantasy_machine_dir = '/'.join(os.getcwd().split('/')[:-1])
+# fantasy_machine_dir = os.getcwd()
 base_path = '.'
 
 # PATHS
@@ -23,6 +23,10 @@ depthchart_table = 'depth_charts'
 id_mapping_db = "{base_path}/data/id_mapping.db".format(base_path=base_path)
 player_map_table = 'playerid_map'
 team_abr_table = 'teamabr_map'
+
+## Previous DFS Data
+dfs_db_path = "{base_path}/data/dfs.db".format(base_path=base_path)
+dfs_table = 'dfs_data'
 
 ## Fantasy Scoring Matrix
 f_scoring = "{base_path}/data/fscoring.xlsx".format(base_path=base_path)

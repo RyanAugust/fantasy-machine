@@ -1,5 +1,5 @@
 import pandas as pd
-from lou_machine import config
+from fantasy_machine import config
 import sqlite3
 
 class metric_calculator(object):

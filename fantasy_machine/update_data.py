@@ -7,8 +7,8 @@ import zipfile
 import io
 import subprocess
 
-from lou_machine import config
-from lou_machine import data_ops
+from fantasy_machine import config
+from fantasy_machine import data_ops
 
 class update_data(object):
 	def __init__(self):

@@ -3,8 +3,7 @@ class daily_lineups(object):
 	def __init__(self):
 
 		import requests
-		from lxml import html
-		from lxml import etree
+		from lxml import html, etree
 
 		self.lineup_url = 'https://www.rotowire.com/baseball/daily_lineups.htm'
 		self.page = requests.get(self.lineup_url)
@@ -91,11 +90,34 @@ class daily_lineups(object):
 								'lineup_odds':lineup_odds})
 		return player_list
 
+def retrieve_past_salaries(years=None, weeks=None, site='FD'):
+	import requests
+	from lxml import html, etree
+
+	base_url = 'http://rotoguru1.com/cgi-bin/fyday.pl?week={week}&year={year}&game={site}&scsv=1'
+
+	if years == None:
+		years = range(2011,2019)
+	if weeks == None:
+		weeks = range(1,18)
+
+	final_csv = []
+	for year in years:
+		for week in weeks:
+			try:
+				page = requests.get(base_url.format(week=week, year=year, site=site))
+				tree = html.fromstring(page.content)
+				csv = tree.xpath("//pre/text()")
+				final_csv.append(csv) csv
+
+			except:
+				print('error pulling salaries for week {week}-{year} for {site}'.format(week=week, year=year, site=site))
+	return final_csv
+
 def update_depthchart():
 	
 	import requests
-	from lxml import html
-	from lxml import etree
+	from lxml import html, etree
 	
 	depth_charts = []
 	base_url = 'http://oakland.athletics.mlb.com/team/depth_chart/?c_id={}'
