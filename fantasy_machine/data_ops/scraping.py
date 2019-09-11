@@ -108,7 +108,7 @@ def retrieve_past_salaries(years=None, weeks=None, site='FD'):
 				page = requests.get(base_url.format(week=week, year=year, site=site))
 				tree = html.fromstring(page.content)
 				csv = tree.xpath("//pre/text()")
-				final_csv.append(csv) csv
+				final_csv.append(csv)
 
 			except:
 				print('error pulling salaries for week {week}-{year} for {site}'.format(week=week, year=year, site=site))
