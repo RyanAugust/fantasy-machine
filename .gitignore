@@ -8,3 +8,5 @@ notebooks/
 *.db
 *.pyc
 .DS_Store
+*.pickle
+*.csv
